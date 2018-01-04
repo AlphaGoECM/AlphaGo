@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import numpy as np
 
 WHITE = -1
@@ -7,9 +5,11 @@ BLACK = +1
 EMPTY = 0
 PASS_MOVE = None
 
+
 class GameState(object):
     """State of a game of Go and some basic functions to interact with it
     """
+    __NEIGHBORS_CACHE = {}
 
     def __init__(self, size=19, komi=7.5, enforce_superko=False):
         self.board = np.zeros((size, size))
@@ -26,12 +26,13 @@ class GameState(object):
         # +1 to the following each pass move by a player
         self.passes_white = 0
         self.passes_black = 0
+        self._create_neighbors_cache()
         # `self.liberty_sets` is a 2D array with the same indexes as `board`
         # containing all the empty (x',y') in the neighborhood of (x,y)
         self.liberty_sets = [[set() for _ in range(size)] for _ in range(size)]
         for x in range(size):
             for y in range(size):
-                self.liberty_sets[x][y] = set(self._neighbors((x,y)))
+                self.liberty_sets[x][y] = set(self._neighbors((x, y)))
         # `self.liberty_counts` displays the number of liberties for each stone
         self.liberty_counts = np.zeros((size, size), dtype=np.int)
         # We initialize liberty_sets of empty board : indeed a 0 means the stones
@@ -41,6 +42,8 @@ class GameState(object):
         # `group_sets[x][y]` points to a set of tuples
         # containing all (x',y') pairs in the group connected to (x,y)
         self.group_sets = [[set() for _ in range(size)] for _ in range(size)]
+        self.__legal_move_cache = None
+        self.__legal_eyes_cache = None
         # Record of 'age' of each stone for NN features
         # Same logic : empty = -1 as age
         self.stone_ages = np.zeros((size, size), dtype=np.int) - 1
@@ -85,15 +88,20 @@ class GameState(object):
         (x, y) = position
         return x >= 0 and y >= 0 and x < self.size and y < self.size
 
+    def _create_neighbors_cache(self):
+        if self.size not in GameState.__NEIGHBORS_CACHE:
+            GameState.__NEIGHBORS_CACHE[self.size] = {}
+            for x in range(self.size):
+                for y in range(self.size):
+                    neighbors = [xy for xy in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]
+                                 if self._on_board(xy)]
+                    GameState.__NEIGHBORS_CACHE[self.size][(x, y)] = neighbors
+
     def _neighbors(self, position):
         """A private helper function that simply returns a list of positions neighboring
         the given (x,y) position. Basically it handles edges and corners.
         """
-        for x in range(self.size):
-            for y in range(self.size):
-                neighbors = [xy for xy in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]
-                             if self._on_board(xy)]
-        return neighbors
+        return GameState.__NEIGHBORS_CACHE[self.size][position]
 
     def _diagonals(self, position):
         """Like _neighbors but for diagonal positions
@@ -169,8 +177,6 @@ class GameState(object):
         other.num_black_prisoners = self.num_black_prisoners
         other.num_white_prisoners = self.num_white_prisoners
         other.enforce_superko = self.enforce_superko
-        other.current_hash = self.current_hash.copy()
-        other.previous_hashes = self.previous_hashes.copy()
         # update liberty and group sets.
         #
         # group_sets and liberty_sets are shared between stones in the same
@@ -232,11 +238,6 @@ class GameState(object):
         state_copy = self.copy()
         state_copy.enforce_superko = False
         state_copy.do_move(action)
-
-        if state_copy.current_hash in self.previous_hashes:
-            return True
-        else:
-            return False
 
     def is_legal(self, action):
         """Determines if the given action (x,y) is a legal move
@@ -404,15 +405,14 @@ class GameState(object):
             self.current_player = -color
             self.history.append(action)
             self.__legal_move_cache = None
-        #else:
-            #self.current_player = reset_player
-            #raise IllegalMove(str(action))
+        else:
+            self.current_player = reset_player
+            raise IllegalMove(str(action))
         # Check for end of game
         if len(self.history) > 1:
             if self.history[-1] is PASS_MOVE and self.history[-2] is PASS_MOVE \
                     and self.current_player == WHITE:
                 self.is_end_of_game = True
-
         return self.is_end_of_game
 
 
