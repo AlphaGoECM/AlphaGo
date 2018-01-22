@@ -1,7 +1,7 @@
 from keras.models import Sequential
 from keras.layers import Convolution2D
 from keras.layers.core import Activation, Flatten
-
+from keras.optimizers import SGD
 
 from keras.models import load_model
 
@@ -50,50 +50,54 @@ def create_CNN() :
     filters = 128,
     kernel_size = (5,5),
     input_shape = (46,19,19),
+     border_mode='same',
+     init='uniform',
     activation = 'relu'))
     for i in range(11):
-        CNN.add (Convolution2D(filters = 128,kernel_size = (3,3),activation = 'relu'))
+        CNN.add (Convolution2D(filters = 128,kernel_size = (3,3),activation = 'relu', border_mode='same', init='uniform' ))
     CNN.add (Convolution2D(
     filters = 1,
-    kernel_size = (1,1)))
+    kernel_size = (1,1),
+    border_mode='same',
+    init='uniform'))
+
     CNN.add(Flatten())
 
     CNN.add(Activation('softmax'))
 
     return CNN
 
+def one_hot_action(action, size=19):
 
-    def one_hot_action(action, size=19):
-
-        categorical = np.zeros((size, size))
-        categorical[action] = 1
-        return categorical
+    categorical = np.zeros((size, size))
+    categorical[action] = 1
+    return categorical
 
 
-    def shuffled_hdf5_batch_generator(state_dataset, action_dataset, indices, batch_size, transforms=[]):
+def shuffled_hdf5_batch_generator(state_dataset, action_dataset, indices, batch_size, transforms=[]):
 
-        state_batch_shape = (batch_size,) + state_dataset.shape[1:]
-        game_size = state_batch_shape[-1]
-        Xbatch = np.zeros(state_batch_shape)
-        Ybatch = np.zeros((batch_size, game_size * game_size))
-        batch_idx = 0
-        while True:
-            for data_idx in indices:
-                # choose a random transformation of the data (rotations/reflections of the board)
-                transform = np.random.choice(transforms)
-                # get state from dataset and transform it.
-                # loop comprehension is used so that the transformation acts on the
-                # 3rd and 4th dimensions
-                state = np.array([transform(plane) for plane in state_dataset[data_idx]])
-                # must be cast to a tuple so that it is interpreted as (x,y) not [(x,:), (y,:)]
-                action_xy = tuple(action_dataset[data_idx])
-                action = transform(one_hot_action(action_xy, game_size))
-                Xbatch[batch_idx] = state
-                Ybatch[batch_idx] = action.flatten()
-                batch_idx += 1
-                if batch_idx == batch_size:
-                    batch_idx = 0
-                    yield (Xbatch, Ybatch)
+    state_batch_shape = (batch_size,) + state_dataset.shape[1:]
+    game_size = state_batch_shape[-1]
+    Xbatch = np.zeros(state_batch_shape)
+    Ybatch = np.zeros((batch_size, game_size * game_size))
+    batch_idx = 0
+    while True:
+        for data_idx in indices:
+            # choose a random transformation of the data (rotations/reflections of the board)
+            transform = np.random.choice(transforms)
+            # get state from dataset and transform it.
+            # loop comprehension is used so that the transformation acts on the
+            # 3rd and 4th dimensions
+            state = np.array([transform(plane) for plane in state_dataset[data_idx]])
+            # must be cast to a tuple so that it is interpreted as (x,y) not [(x,:), (y,:)]
+            action_xy = tuple(action_dataset[data_idx])
+            action = transform(one_hot_action(action_xy, game_size))
+            Xbatch[batch_idx] = state
+            Ybatch[batch_idx] = action.flatten()
+            batch_idx += 1
+            if batch_idx == batch_size:
+                batch_idx = 0
+                yield (Xbatch, Ybatch)
 
         """training"""
 
@@ -160,12 +164,12 @@ def run_training(cmd_line_args=None):
         # test_indices = shuffle_indices[n_train_data + n_val_data:]
 
         # create dataset generators
-        train_data_generator = CNN.shuffled_hdf5_batch_generator(
+        train_data_generator = shuffled_hdf5_batch_generator(
             dataset["states"],
             dataset["actions"],
             train_indices,
             args.minibatch)
-        val_data_generator = CNN.shuffled_hdf5_batch_generator(
+        val_data_generator = shuffled_hdf5_batch_generator(
             dataset["states"],
             dataset["actions"],
             val_indices,
@@ -184,7 +188,6 @@ def run_training(cmd_line_args=None):
             generator=train_data_generator,
             samples_per_epoch=samples_per_epoch,
             nb_epoch=args.epochs,
-            callbacks=[checkpointer, meta_writer],
             validation_data=val_data_generator,
             nb_val_samples=n_val_data)
 
