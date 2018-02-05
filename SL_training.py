@@ -40,8 +40,7 @@ def prepare_data(state_dataset, action_dataset, indices, batch_size):
         Xbatch[batch_idx] = state
         Ybatch[batch_idx] = action.flatten()
         batch_idx += 1
-        if batch_idx == batch_size:
-            batch_idx = 0
+
         return (Xbatch, Ybatch)
 
 
@@ -54,13 +53,8 @@ def shuffled_hdf5_batch_generator(state_dataset, action_dataset, indices, batch_
     batch_idx = 0
     while True:
         for data_idx in indices:
-            # choose a random transformation of the data (rotations/reflections of the board)
             transform = np.random.choice(transforms)
-            # get state from dataset and transform it.
-            # loop comprehension is used so that the transformation acts on the
-            # 3rd and 4th dimensions
             state = np.array([transform(plane) for plane in state_dataset[data_idx]])
-            # must be cast to a tuple so that it is interpreted as (x,y) not [(x,:), (y,:)]
             action_xy = tuple(action_dataset[data_idx])
             action = transform(one_hot_action(action_xy, game_size))
             Xbatch[batch_idx] = state
@@ -90,8 +84,6 @@ def run_training(cmd_line_args=None):
         import argparse
 
         parser = argparse.ArgumentParser(description='Perform supervised training on a policy network.')
-
-        #parser.add_argument("model", help="Path to a hdf5 model file", default =model)
 
         parser.add_argument("--train_data","-t", help="A hdf5 file of training data")
         parser.add_argument("--out_directory","-o", help="directory where metadata and weights will be saved")
@@ -129,7 +121,7 @@ def run_training(cmd_line_args=None):
 
         dataset_features = dataset['features'][()]
         dataset_features = dataset_features.split(",") # a terme, cela permettra de verifier quelle feature est utilisee pour le modele et si cela match avec les donnees
-        features_nb = 38
+        features_nb = dataset['features_nb'][()]
 
         if args.verbose :
             print ("%s FEATURES LOADED" %features_nb)
@@ -211,6 +203,8 @@ def run_training(cmd_line_args=None):
             validation_data=val_data_generator,
             nb_val_samples=n_val_data)
 
+            model.save("weights_gen.00000.hdf5")
+
         else :
             symmetries = [BOARD_TRANSFORMATIONS[name] for name in args.symmetries.strip().split(",")]
             shuffle_indices = np.random.permutation(n_total_data)
@@ -221,8 +215,8 @@ def run_training(cmd_line_args=None):
 
             if args.verbose :
                 print("STARTING TRAINING - SL")
-                print "les donnees en entrée sont de shape ",x.shape
-                print "les donnes en sortie sont de shpae",y.shape
+                print "Entry dataset shape ",x.shape
+                print "Exit dataset shape ",y.shape
 
 
 
@@ -231,9 +225,7 @@ def run_training(cmd_line_args=None):
             epochs=args.epochs,
             verbose=verbose)
 
-            model.save("weights.00000.hdf5")
-
-
+            model.save("weights.00001.hdf5")
 
 
         if args.verbose:

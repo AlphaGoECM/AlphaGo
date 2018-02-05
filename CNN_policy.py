@@ -13,20 +13,21 @@ from Biaislayer import Biais
 class CNN :
 
 
-        """model creation"""
-        """     Mastering GoG quotes
-        The SL policy network p(w)(ajs) alternates between convolutional layers with weights w and rectifier non-linearities.
-        A final softmax layer outputs a probability distribution over all legal moves a.
-        We trained a 13 layer policy network
-        The input to the policy network is a 19  19  48 image stack
-        consisting of 48 feature planes. The first hidden layer zero pads the input into a 23  23 image,
-        then convolves k filters of kernel size 55 with stride 1 with the input image and applies a rectifier
-        nonlinearity. Each of the subsequent hidden layers 2 to 12 zero pads the respective previous hidden
-        layer into a 2121 image, then convolves k filters of kernel size 33 with stride 1, again followed
-        by a rectifier nonlinearity. The final layer convolves 1 filter of kernel size 1  1 with stride 1, with
-        a different bias for each position, and applies a softmax function. The match version of AlphaGo
-        used k = 192 filters; Figure 2,b and Extended Data Table 3 additionally show the results of training
-        with k = 128; 256; 384 filters."""
+    """model creation"""
+    """     Mastering GoG quotes
+    The SL policy network p(w)(ajs) alternates between convolutional layers with weights w and rectifier non-linearities.
+    A final softmax layer outputs a probability distribution over all legal moves a.
+    We trained a 13 layer policy network
+    The input to the policy network is a 19  19  48 image stack
+    consisting of 48 feature planes. The first hidden layer zero pads the input into a 23  23 image,
+    then convolves k filters of kernel size 55 with stride 1 with the input image and applies a rectifier
+    nonlinearity. Each of the subsequent hidden layers 2 to 12 zero pads the respective previous hidden
+    layer into a 2121 image, then convolves k filters of kernel size 33 with stride 1, again followed
+    by a rectifier nonlinearity. The final layer convolves 1 filter of kernel size 1  1 with stride 1, with
+    a different bias for each position, and applies a softmax function. The match version of AlphaGo
+    used k = 192 filters; Figure 2,b and Extended Data Table 3 additionally show the results of training
+    with k = 128; 256; 384 filters."""
+
     @staticmethod
     def create_CNN(size, layers, features_nb) :
 
