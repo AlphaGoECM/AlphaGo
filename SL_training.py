@@ -2,6 +2,9 @@ from keras.optimizers import SGD
 from keras.models import load_model
 from CNN_policy import CNN
 
+import datetime
+
+
 #export PATH=/users/usrlocal/artieres/Anaconda/bin/
 #import ipdb; ipdb.set_trace()
 
@@ -172,6 +175,12 @@ def run_training(cmd_line_args=None):
         if args.verbose:
             print ('MODEL COMPILED')
 
+        date = datetime.datetime.now()
+
+        if args.verbose:
+            print (str(date))
+
+
         if (args.generator):
 
 
@@ -202,7 +211,8 @@ def run_training(cmd_line_args=None):
             validation_data=val_data_generator,
             nb_val_samples=n_val_data)
 
-            name = ("model_gen.hdf5")
+            date = datetime.datetime.now()
+            name = ("%s/model_gen_%s_%s_%sh%s.hdf5" %(args.out_directory,date.day,date.month,date.hour, date.minute))
 
 
         else :
@@ -218,18 +228,19 @@ def run_training(cmd_line_args=None):
             batch_size=args.batch,
             epochs=args.epochs,
             verbose=verbose)
-
-            name = ("model.hdf5")
+            date = datetime.datetime.now()
+            name = ("%s/model_%s_%s_%sh%s.hdf5" %(args.out_directory,date.day,date.month,date.hour,date.minute))
 
 
 
         if args.verbose:
             print("TRAINING FINISHED")
+            print (str(date))
 
         model.save(name)
 
         if args.verbose:
-            print("SAVE DONE IN %s" % out_directory)
+            print("SAVE DONE IN %s" % args.out_directory)
 
 if __name__ == '__main__':
 
