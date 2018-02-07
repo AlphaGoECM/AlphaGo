@@ -29,7 +29,7 @@ def one_hot_action(action, size=19):
     return categorical
 
 
-def prepare_data(state_dataset, action_dataset, indices):
+def prepare_data(state_dataset, action_dataset,indices):
 
     batch_size =  len(state_dataset)
     state_batch_shape = (batch_size,) + state_dataset.shape[1:]
@@ -50,7 +50,7 @@ def prepare_data(state_dataset, action_dataset, indices):
 
 def shuffled_hdf5_batch_generator(state_dataset, action_dataset, indices, batch_size, transforms=[]):
 
-    state_batch_shape = (batch_size,) + state_dataset.shape[1:]
+    state_batch_shape = (batch_size,) + state_dataset.shape[x1:]
     game_size = state_batch_shape[-1]
     Xbatch = np.zeros(state_batch_shape)
     Ybatch = np.zeros((batch_size, game_size * game_size))
@@ -216,7 +216,7 @@ def run_training(cmd_line_args=None):
 
 
         else :
-            x,y = prepare_data(dataset["states"], dataset["actions"], train_indices)
+            x,y = prepare_data(dataset["states"], dataset["actions"],n_train_data)
 
             if args.verbose :
                 print("STARTING TRAINING - SL")

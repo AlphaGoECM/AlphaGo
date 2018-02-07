@@ -58,7 +58,8 @@ class GameConverter:
             test_states = states[index:index+length]
             test_actions = actions[index:index+length]
         """
-
+        REMOVED_GAMES = 0
+        NB_ACTION = 0
         # make a hidden temporary file in case of a crash.
         # on success, this is renamed to hdf5_file
         tmp_file = os.path.join(os.path.dirname(hdf5_file), ".tmp." + os.path.basename(hdf5_file))
@@ -68,10 +69,10 @@ class GameConverter:
             states = h5f.require_dataset(
                 'states',
                 dtype=np.uint8,
-                shape=(1, self.n_features, bd_size, bd_size),
-                maxshape=(None, self.n_features, bd_size, bd_size),  # 'None' == arbitrary size
+                shape=(1, bd_size, bd_size, self.n_features),
+                maxshape=(None, bd_size, bd_size, self.n_features),  # 'None' == arbitrary size
                 exact=False,  # allow non-uint8 datasets to be loaded, coerced to uint8
-                chunks=(64, self.n_features, bd_size, bd_size),  # approximately 1MB chunks
+                chunks=(64, bd_size, bd_size, self.n_features),  # approximately 1MB chunks
                 compression="lzf")
             actions = h5f.require_dataset(
                 'actions',
@@ -88,6 +89,7 @@ class GameConverter:
             # Store comma-separated list of feature planes in the scalar field 'features'. The
             # string can be retrieved using h5py's scalar indexing: h5f['features'][()]
             h5f['features'] = np.string_(','.join(self.feature_processor.feature_list))
+            h5f['features_nb'] =  self.n_features
 
             if verbose:
                 print("created HDF5 dataset in {}".format(tmp_file))
@@ -102,27 +104,35 @@ class GameConverter:
                 try:
                     for state, move in self.convert_game(file_name, bd_size):
                         if next_idx >= len(states):
-                            states.resize((next_idx + 1, self.n_features, bd_size, bd_size))
+                            states.resize((next_idx + 1, bd_size, bd_size, self.n_features))
                             actions.resize((next_idx + 1, 2))
                         states[next_idx] = state
                         actions[next_idx] = move
                         n_pairs += 1
                         next_idx += 1
+                        NB_ACTION +=1
                 except go.IllegalMove:
-                    warnings.warn("Illegal Move encountered in %s\n"
-                                  "\tdropping the remainder of the game" % file_name)
+                    warnings.warn("Illegal Move encountered, dropping the remainder of the game" )
+                    REMOVED_GAMES +=1
                 except sgf.ParseException:
-                    warnings.warn("Could not parse %s\n\tdropping game" % file_name)
+                    warnings.warn("Could not parse, dropping game")
+                    REMOVED_GAMES +=1
                 except SizeMismatchError:
-                    warnings.warn("Skipping %s; wrong board size" % file_name)
+                    warnings.warn("Skipping; wrong board size")
+                    REMOVED_GAMES +=1
                 except Exception as e:
                     # catch everything else
                     if ignore_errors:
-                        warnings.warn("Unkown exception with file %s\n\t%s" % (file_name, e),
+                        warnings.warn("Unkown exception with file %s  %s" % (file_name, e),
                                       stacklevel=2)
+                        REMOVED_GAMES +=1
+
                     else:
+
                         raise e
+
                 finally:
+
                     if n_pairs > 0:
                         # '/' has special meaning in HDF5 key names, so they
                         # are replaced with ':' here
@@ -138,7 +148,9 @@ class GameConverter:
             raise e
 
         if verbose:
-            print("finished. renaming %s to %s" % (tmp_file, hdf5_file))
+            print("FINISHED. renaming %s to %s" % (tmp_file, hdf5_file))
+            print "With %s removed games" % REMOVED_GAMES
+            print "And a total of %s states" % NB_ACTION
 
         # processing complete; rename tmp_file to hdf5_file
         h5f.close()
