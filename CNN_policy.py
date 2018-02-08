@@ -36,7 +36,7 @@ class CNN :
         CNN.add (Conv2D(
         filters = 128,
         kernel_size = (5,5),
-        input_shape = (features_nb,size,size),
+        input_shape = (size,size,features_nb),
         padding='same',
         kernel_initializer='uniform',
         activation = 'relu'))
@@ -53,7 +53,6 @@ class CNN :
 
         CNN.add(Flatten())
         CNN.add(Biais())
-        CNN.add(Dense(361))
         CNN.add(Activation('softmax'))
 
 

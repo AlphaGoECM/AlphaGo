@@ -51,16 +51,16 @@ def prepare_data(state_dataset, action_dataset,indices):
 def shuffled_hdf5_batch_generator(state_dataset, action_dataset, indices, batch_size, transforms=[]):
 
     state_batch_shape = (batch_size,) + state_dataset.shape[1:]
-    game_size = state_batch_shape[-1]
+    game_size = state_dataset.shape[1]
     Xbatch = np.zeros(state_batch_shape)
     Ybatch = np.zeros((batch_size, game_size * game_size))
     batch_idx = 0
     while True:
         for data_idx in indices:
             transform = np.random.choice(transforms)
-            state = np.array([transform(plane) for plane in state_dataset[data_idx]])
+            state = np.array([plane for plane in state_dataset[data_idx]])
             action_xy = tuple(action_dataset[data_idx])
-            action = transform(one_hot_action(action_xy, game_size))
+            action = one_hot_action(action_xy, game_size)
             Xbatch[batch_idx] = state
             Ybatch[batch_idx] = action.flatten()
             batch_idx += 1
