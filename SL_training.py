@@ -89,21 +89,22 @@ def run_training(cmd_line_args=None):
 
         parser = argparse.ArgumentParser(description='Perform supervised training on a policy network.')
 
-        parser.add_argument("--train_data","-t", help="A hdf5 file of training data")
-        parser.add_argument("--out_directory","-o", help="directory where metadata and weights will be saved")
-        parser.add_argument("--model", "-mo", help="load a hdf5 model file. You have to give the file path", default=None)
+        parser.add_argument("--train_data","-t", help="A hdf5 file of training data MANDATORY")
+        parser.add_argument("--proportion", "-p", help=" %\of data used in the data file. Default: 100%", type=int, default=100)
+        parser.add_argument("--out_directory","-o", help="directory where metadata and weights will be saved MANDATORY")
+        parser.add_argument("--model", "-mo", help="load a hdf5 model file. You have to give the file path. Do not use if you want the model to be created", default=None)
         parser.add_argument("--layers_nb", "-L", help="total number of intern Conv2D layers, Default: 11 (+2 others)", type=int, default=11)
-        parser.add_argument("--board_size", "-s", help="size of the go board", type=int, default=19)
+        parser.add_argument("--board_size", "-s", help="size of the go board Default : 19", type=int, default=19)
 
         parser.add_argument("--batch", "-B", help="size of training data batches. Default: 16", type=int, default=16)
         parser.add_argument("--epochs", "-E", help="total number of iterations on the data. Default: 4", type=int, default=4)
-        parser.add_argument("--epoch-length", "-l", help="number of training examples considered 'one epoch'. Default: # training data", type=int, default=None)
+        parser.add_argument("--epoch-length", "-l", help="number of training examples considered 'one epoch'. Default: #training data", type=int, default=None)
         parser.add_argument("--learning-rate", "-r", help="learning rate - how quickly the model learns at first. Default: .03", type=float, default=.03)
         parser.add_argument("--decay", "-d", help="the rate at which learning decreases. Default: .0001", type=float, default=.0001)
 
         parser.add_argument("--verbose", "-v", help="turn on verbose mode", default=False, action="store_true")
 
-        parser.add_argument("--generator", "-gen", help="turn on generator data mode", default=False, action="store_true")
+        parser.add_argument("--nogenerator", "-nogen", help="turn off generator data mode", default=False, action="store_true")
 
 
         symmetries = 'noop,rot90,rot180,rot270,fliplr,flipud,diag1,diag2'
@@ -125,8 +126,7 @@ def run_training(cmd_line_args=None):
                 print("directory %s exists. any previous data will be overwritten" %args.out_directory)
         else:
             if args.verbose:
-                print("starting fresh output directory %s" % args.out_directory)
-                print("creating output directory {}".format(args.out_directory))
+                print("creating output file {}".format(args.out_directory))
             os.makedirs(args.out_directory)
 
         # load dataset
@@ -158,8 +158,10 @@ def run_training(cmd_line_args=None):
                 model.summary()
 
 
-        n_total_data = len(dataset["states"])
+        n_total_data = len(dataset["states"])*args.proportion/100
         n_train_data = int(0.9 * n_total_data)
+        if args.verbose:
+            print ("Using %s states for the training in %s "%( n_train_data, len(dataset["states"])) )
 
         n_train_data = n_train_data - (n_train_data % args.batch) # Need to have data divisible by batch size
         n_val_data = n_total_data - n_train_data
@@ -181,7 +183,7 @@ def run_training(cmd_line_args=None):
             print (str(date))
 
 
-        if (args.generator):
+        if (not(args.nogenerator)):
 
 
             symmetries = [BOARD_TRANSFORMATIONS[name] for name in symmetries.strip().split(",")]
@@ -203,7 +205,7 @@ def run_training(cmd_line_args=None):
             samples_per_epoch = args.epoch_length or n_train_data
 
             if args.verbose:
-                print("STARTING TRAINING - SL GENERATOR MODE")
+                print("STARTING TRAINING - SL IN GENERATOR MODE")
 
             model.fit_generator(generator=train_data_generator,
             samples_per_epoch=samples_per_epoch,
