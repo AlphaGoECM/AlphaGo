@@ -7,6 +7,7 @@ from keras.layers import Convolution2D as Conv2D
 from keras.layers.core import Activation, Flatten
 
 from Biaislayer import Biais
+from keras.models import load_model
 
 
 
@@ -58,3 +59,12 @@ class CNN :
 
 
         return CNN
+
+    def load(self,filename):
+        CNN=load_model(filename, custom_objects={'Biais': Biais})
+        
+    def get_input(train=False):
+        return CNN.get_input(train=False)
+
+    def get_output(train=False):
+        return CNN.get_output(train=False)
