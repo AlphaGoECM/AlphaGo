@@ -2,7 +2,7 @@ import CNN_policy
 import numpy as np
 import go
 
-def flatten_idx(position, size):
+def conv_idx(position, size):   # convertit indice matrice [x][y] en indice liste[x*size+y]
     (x, y) = position
     return x * size + y
 
@@ -13,10 +13,7 @@ class Player_rd(object): #joue au hasard
     
     def get_move(self, state):
         # list with sensible moves
-        sensible_moves = [move for move in state.get_legal_moves(include_eyes=False)]
-        
-      
-        
+        sensible_moves = [move for move in state.get_legal_moves(include_eyes=False)]        
         #parcourt les coups possible et ressort celui qu'aurai jouer le policy network    
         if len(sensible_moves) > 0:
             a=np.random.randint(0,len(sensible_moves),1) #on prend un coup au hasard
@@ -33,30 +30,33 @@ class Player_pl(object): # joue coup le plus probable donnée par le policy
         self.convertor=convertor
 
        
-    def eval_state(self, state, moves=None): # evalue le coup joué par le policy network dans une liste de coup donnée
+    def eval_state(self, state, moves=None): # renvoie la probabilité de jouer chacun des coups dans moves en fonction de state par le policy
 
-        tensor = self.convertor.state_to_tensor(state)
-        # run the tensor through the network
-        network_output = self.policy.forward(tensor)  # A AJOUTER
-        moves = moves or state.get_legal_moves()
-
-
-        if len(moves) == 0:
+        if len(moves) == 0:  # pas de coup possible
             return []
-        move_indices = [flatten_idx(m, state.size) for m in moves] #A VERIFIER
+        tensor = self.convertor.state_to_tensor(state) # convertit l'état du jeu en entré pour le CNN
+
+        network_output = self.policy.predict(tensor)  # A FAIRE
+  
+        move_indices = [conv_idx(m, state.size) for m in moves] 
+        
+        # A faire : 
+        
         # get network activations at legal move locations
-        distribution = network_output[0][move_indices]
+        distribution = network_output[0][move_indices] #A VERIFIER
         distribution = distribution / distribution.sum()
         return zip(moves, distribution)
     
        # return self._select_moves_and_normalize(network_output[0], moves, state.size)
-        
+    
+    
+    
     def get_move(self, state):
         # list with sensible moves
         sensible_moves = [move for move in state.get_legal_moves(include_eyes=False)]
              
         
-        #parcourt les coups possible et ressort celui qu'aurai jouer le policy network    
+        #parcourt les coups possible et ressort celui joué le policy network    
         if len(sensible_moves) > 0:
 
             move_probs = self.eval_state(state, sensible_moves)
