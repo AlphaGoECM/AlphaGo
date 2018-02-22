@@ -39,6 +39,7 @@ class Tools :
             state = np.array([plane for plane in state_dataset[data_idx]])
             action_xy = tuple(action_dataset[data_idx])
             action = Tools.one_hot_action(action_xy, game_size)
+
             Xbatch[batch_idx] = state
             Ybatch[batch_idx] = action.flatten()
             batch_idx += 1
@@ -47,6 +48,10 @@ class Tools :
 
     @staticmethod
     def batch_generator(state_dataset, action_dataset, indices, batch_size, transforms=[]):
+
+        if state_dataset.shape[1] == 38:
+            state_dataset=np.swapaxes(state_dataset,1,3)
+            state_dataset=np.swapaxes(state_dataset,1,2)
 
         state_batch_shape = (batch_size,) + state_dataset.shape[1:]
         game_size = state_dataset.shape[1]

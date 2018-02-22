@@ -180,7 +180,7 @@ def run_training(cmd_line_args=None):
             samples_per_epoch=samples_per_epoch,
             nb_epoch=args.epochs,
             validation_data=val_data_generator,
-            nb_val_samples=n_val_data,callbacks=callbacks)
+            validation_steps=n_val_data,callbacks=callbacks)
 
         date = datetime.datetime.now()
         filepath = ("%s/model_%s_%s_%sh%s.hdf5" %(out_dir,date.day,date.month,date.hour, date.minute))
