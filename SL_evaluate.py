@@ -1,6 +1,6 @@
 from keras.optimizers import SGD
 from keras.models import load_model
-from Biaislayer import Biais
+from Tools import Biais, Tools
 
 #export PATH=/users/usrlocal/artieres/Anaconda/bin/
 #import ipdb; ipdb.set_trace()
@@ -11,31 +11,6 @@ import h5py as h5
 import sys
 import argparse
 
-def one_hot_action(action, size=19):
-
-    categorical = np.zeros((size, size))
-    categorical[action] = 1
-    return categorical
-
-
-
-def prepare_data(state_dataset, action_dataset, indices):
-
-    batch_size =  len(state_dataset)
-    state_batch_shape = (batch_size,) + state_dataset.shape[1:]
-    game_size = state_batch_shape[-1]
-    Xbatch = np.zeros(state_batch_shape)
-    Ybatch = np.zeros((batch_size, game_size * game_size))
-    batch_idx = 0
-    for data_idx in  range(batch_size):
-        state = np.array([plane for plane in state_dataset[data_idx]])
-        action_xy = tuple(action_dataset[data_idx])
-        action = one_hot_action(action_xy, game_size)
-        Xbatch[batch_idx] = state
-        Ybatch[batch_idx] = action.flatten()
-        batch_idx += 1
-
-        return (Xbatch, Ybatch)
 
 def run_eval(cmd_line_args=None):
 
@@ -65,7 +40,7 @@ def run_eval(cmd_line_args=None):
     n_total_data = len(dataset["states"])
     shuffle_indices = np.random.permutation(n_total_data)
     train_indices = shuffle_indices[0:n_total_data]
-    x,y = prepare_data(dataset["states"], dataset["actions"], train_indices)
+    x,y = Tools.prepare_data(dataset["states"], dataset["actions"], train_indices)
     score, accuracy = model.evaluate(x,y)
     print (score,accuracy)
 

@@ -1,4 +1,3 @@
-
 from keras.models import load_model
 
 from keras.models import Sequential
@@ -6,7 +5,7 @@ from keras.layers import Dense
 from keras.layers import Convolution2D as Conv2D
 from keras.layers.core import Activation, Flatten
 
-from Biaislayer import Biais
+from Tools import Biais
 from keras.models import load_model
 
 class CNN :
@@ -26,9 +25,9 @@ class CNN :
     a different bias for each position, and applies a softmax function. The match version of AlphaGo
     used k = 192 filters; Figure 2,b and Extended Data Table 3 additionally show the results of training
     with k = 128; 256; 384 filters."""
-    
-    
-    def __init__(self, layers=None, name=None): 
+
+
+    def __init__(self, layers=None, name=None):
         self.layers = []  # Stack of layers.
         self.model = None  # Internal Model instance.
         self.inputs = []  # List of input tensors
@@ -41,7 +40,7 @@ class CNN :
         self._outbound_nodes = []
         self.built = False
 
-    
+
         self.name = name
 
         # Add to the model any layers passed to the constructor.
@@ -76,7 +75,7 @@ class CNN :
         CNN.add(Flatten())
         CNN.add(Biais())
         CNN.add(Activation('softmax'))
-        self.model=CNN
+        
         return CNN
 
     def load(self,filename):
@@ -84,8 +83,6 @@ class CNN :
         self.model=CNN
 
 
-    
+
     def pred(self,tensor):
         return self.model.predict(tensor)
-
-   

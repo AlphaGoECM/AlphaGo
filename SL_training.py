@@ -1,7 +1,17 @@
+#Ne pas utiliser toute la mémoire du gpu par défaut (alloc dynamique)
+import tensorflow as tf
+from keras import backend as K
+config = tf.ConfigProto()
+config.gpu_options.allow_growth = True
+session = tf.Session(config=config)
+K.set_session(session)
+
+
 from keras.optimizers import SGD
+from keras.callbacks import ModelCheckpoint
 from keras.models import load_model
 from CNN_policy import CNN
-
+from Tools import  Tools
 import datetime
 
 
@@ -15,6 +25,8 @@ import sys
 import argparse
 
 
+
+
 def __init__(self, path):
     self.file = path
     self.metadata = {
@@ -22,53 +34,6 @@ def __init__(self, path):
         "best_epoch": 0
     }
 
-def one_hot_action(action, size=19):
-
-    categorical = np.zeros((size, size))
-    categorical[action] = 1
-    return categorical
-
-
-def prepare_data(state_dataset, action_dataset,indices):
-
-    batch_size =  len(state_dataset)
-    state_batch_shape = (batch_size,) + state_dataset.shape[1:]
-    game_size = state_batch_shape[-1]
-    Xbatch = np.zeros(state_batch_shape)
-    Ybatch = np.zeros((batch_size, game_size * game_size))
-    batch_idx = 0
-    for data_idx in  range(batch_size):
-        state = np.array([plane for plane in state_dataset[data_idx]])
-        action_xy = tuple(action_dataset[data_idx])
-        action = one_hot_action(action_xy, game_size)
-        Xbatch[batch_idx] = state
-        Ybatch[batch_idx] = action.flatten()
-        batch_idx += 1
-
-        return (Xbatch, Ybatch)
-
-
-def shuffled_hdf5_batch_generator(state_dataset, action_dataset, indices, batch_size, transforms=[]):
-
-    state_batch_shape = (batch_size,) + state_dataset.shape[1:]
-    game_size = state_dataset.shape[1]
-    Xbatch = np.zeros(state_batch_shape)
-    Ybatch = np.zeros((batch_size, game_size * game_size))
-    batch_idx = 0
-    while True:
-        for data_idx in indices:
-            transform = np.random.choice(transforms)
-            state = np.array([plane for plane in state_dataset[data_idx]])
-            action_xy = tuple(action_dataset[data_idx])
-            action = one_hot_action(action_xy, game_size)
-            Xbatch[batch_idx] = state
-            Ybatch[batch_idx] = action.flatten()
-            batch_idx += 1
-            if batch_idx == batch_size:
-                batch_idx = 0
-                yield (Xbatch, Ybatch)
-
-        """training"""
 
 
 BOARD_TRANSFORMATIONS = {
@@ -92,6 +57,7 @@ def run_training(cmd_line_args=None):
         parser.add_argument("--train_data","-t", help="A hdf5 file of training data MANDATORY")
         parser.add_argument("--proportion", "-p", help=" %\of data used in the data file. Default: 100%", type=int, default=100)
         parser.add_argument("--out_directory","-o", help="directory where metadata and weights will be saved MANDATORY")
+
         parser.add_argument("--model", "-mo", help="load a hdf5 model file. You have to give the file path. Do not use if you want the model to be created", default=None)
         parser.add_argument("--layers_nb", "-L", help="total number of intern Conv2D layers, Default: 11 (+2 others)", type=int, default=11)
         parser.add_argument("--board_size", "-s", help="size of the go board Default : 19", type=int, default=19)
@@ -104,12 +70,11 @@ def run_training(cmd_line_args=None):
 
         parser.add_argument("--verbose", "-v", help="turn on verbose mode", default=False, action="store_true")
 
-        parser.add_argument("--nogenerator", "-nogen", help="turn off generator data mode", default=False, action="store_true")
 
 
         symmetries = 'noop,rot90,rot180,rot270,fliplr,flipud,diag1,diag2'
 
-
+        date = datetime.datetime.now()
 
         if cmd_line_args is None:
             args = parser.parse_args()
@@ -117,17 +82,22 @@ def run_training(cmd_line_args=None):
             args = parser.parse_args(cmd_line_args)
 
         verbose = 0
+        verbose_save = 0
         if args.verbose:
+            verbose_save =1
             verbose = 2
 
         # ensure output directory is available
-        if os.path.exists(args.out_directory):
+
+        out_dir = args.out_directory +'/model_'+ str(date)
+
+        if os.path.exists(out_dir):
             if args.verbose:
-                print("directory %s exists. any previous data will be overwritten" %args.out_directory)
+                print("directory %s exists. any previous data will be overwritten" %out_dir)
         else:
             if args.verbose:
-                print("creating output file {}".format(args.out_directory))
-            os.makedirs(args.out_directory)
+                print("creating output file {}".format(out_dir))
+            os.makedirs(out_dir)
 
         # load dataset
         dataset = h5.File(args.train_data)
@@ -140,6 +110,7 @@ def run_training(cmd_line_args=None):
         features_nb = dataset['features_nb'][()]
         if args.verbose :
             print ("%s FEATURES LOADED" %features_nb)
+            print (dataset_features)
 
 
         # load
@@ -160,16 +131,22 @@ def run_training(cmd_line_args=None):
 
         n_total_data = len(dataset["states"])*args.proportion/100
         n_train_data = int(0.9 * n_total_data)
+
         if args.verbose:
             print ("Using %s states for the training in %s "%( n_train_data, len(dataset["states"])) )
 
         n_train_data = n_train_data - (n_train_data % args.batch) # Need to have data divisible by batch size
         n_val_data = n_total_data - n_train_data
-
         shuffle_indices = np.random.permutation(n_total_data)
 
         train_indices = shuffle_indices[0:n_train_data]
         val_indices = shuffle_indices[n_train_data:n_train_data + n_val_data]
+
+        #callbacks
+
+        filepath = ("%s/model_temp.{epoch:02d}.hdf5" %(out_dir,))
+        checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=verbose_save, save_best_only=True, mode='max')
+        callbacks = [checkpoint]
 
         # compilation
         sgd = SGD(lr=args.learning_rate, decay=args.decay)
@@ -177,46 +154,39 @@ def run_training(cmd_line_args=None):
         if args.verbose:
             print ('MODEL COMPILED')
 
-        date = datetime.datetime.now()
+
 
         if args.verbose:
             print (str(date))
 
 
-        if (not(args.nogenerator)):
+        #if (not(args.nogenerator)):
 
 
-            symmetries = [BOARD_TRANSFORMATIONS[name] for name in symmetries.strip().split(",")]
+        symmetries = [BOARD_TRANSFORMATIONS[name] for name in symmetries.strip().split(",")]
 
             #dataset generators
-            train_data_generator = shuffled_hdf5_batch_generator(
-                dataset["states"],
-                dataset["actions"],
-                train_indices,
-                args.batch,
-                symmetries)
-            val_data_generator = shuffled_hdf5_batch_generator(
-                dataset["states"],
-                dataset["actions"],
-                val_indices,
-                args.batch,
-                symmetries)
+        train_data_generator = Tools.batch_generator( dataset["states"],
+        dataset["actions"], train_indices, args.batch, symmetries)
+        val_data_generator = Tools.batch_generator( dataset["states"],
+        dataset["actions"], val_indices, args.batch, symmetries)
 
-            samples_per_epoch = args.epoch_length or n_train_data
+        samples_per_epoch = args.epoch_length or n_train_data
 
-            if args.verbose:
-                print("STARTING TRAINING - SL IN GENERATOR MODE")
+        if args.verbose:
+            print("STARTING TRAINING - SL IN GENERATOR MODE")
 
-            model.fit_generator(generator=train_data_generator,
+        model.fit_generator(generator=train_data_generator,
             samples_per_epoch=samples_per_epoch,
             nb_epoch=args.epochs,
             validation_data=val_data_generator,
-            nb_val_samples=n_val_data)
+            nb_val_samples=n_val_data,callbacks=callbacks)
 
-            date = datetime.datetime.now()
-            name = ("%s/model_gen_%s_%s_%sh%s.hdf5" %(args.out_directory,date.day,date.month,date.hour, date.minute))
-
-
+        date = datetime.datetime.now()
+        filepath = ("%s/model_%s_%s_%sh%s.hdf5" %(out_dir,date.day,date.month,date.hour, date.minute))
+        tfilepath = ("%s/model_%s_%s_%sh%s.txt" %(out_dir,date.day,date.month,date.hour, date.minute))
+        '''
+        PREVIOUS VERSION WITHOUT DATA GENERATOR
         else :
             x,y = prepare_data(dataset["states"], dataset["actions"],n_train_data)
 
@@ -232,17 +202,18 @@ def run_training(cmd_line_args=None):
             verbose=verbose)
             date = datetime.datetime.now()
             name = ("%s/model_%s_%s_%sh%s.hdf5" %(args.out_directory,date.day,date.month,date.hour,date.minute))
-
+        '''
 
 
         if args.verbose:
             print("TRAINING FINISHED")
             print (str(date))
 
-        model.save(name)
+        model.save(filepath)
+        Tools.text_file(tfilepath,model, n_total_data, args.epochs, date)
 
         if args.verbose:
-            print("SAVE DONE IN %s" % args.out_directory)
+            print("SAVE DONE IN %s" % out_dir)
 
 if __name__ == '__main__':
 
