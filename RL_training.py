@@ -10,8 +10,10 @@ import visualisation as vis
 
 #initialisation
 #player = pl.Player_rd()
+FEATURES = ["stone_color_feature", "ones", "turns_since_move", "liberties", "capture_size",
+                    "atari_size",  "sensibleness", "zeros"]
 opponent =pl.Player_rd()
-conv=ft.Preprocess()
+conv=ft.Preprocess(FEATURES)
 filename="model_gen5_02_.hdf5"
 #filename="model_gen_8_2_5h54.hdf5"
 #filename="model_gen_10_2_18h53.hdf5"
@@ -24,9 +26,9 @@ def play_game(player,opponent,nb_partie,preprocessor,size=9,verbose=False):
     
     #init
     etat = [go.GameState(size) for _ in range(nb_partie)] #liste des parties actuelle
-    coups=[[] for _ in range(nb_partie)]  #liste des coups joués
+    coups=[[] for _ in range(nb_partie)]  #liste des coups joues
     parties=[[] for _ in range(nb_partie)] # liste des etats du jeu
-    id_gagne=[] #liste des indices des parties gagnées
+    id_gagne=[] #liste des indices des parties gagnees
     ratio=0
 
     # deroulement
@@ -48,11 +50,11 @@ def play_game(player,opponent,nb_partie,preprocessor,size=9,verbose=False):
     while(fin<nb_partie): 
     
         for i in range(nb_partie):
-                if(etat[i].is_end_of_game==False): # vérifie que la partie n'est pas fini
-                    coup = actuel.get_move(etat[i]) # on récupere le coup jpué 
+                if(etat[i].is_end_of_game==False): # verifie que la partie n'est pas fini
+                    coup = actuel.get_move(etat[i]) # on recupere le coup jpue 
                     coups[i].append(coup) # on le sauvegarde
                     etat[i].do_move(coup) #on le joue
-                    parties[i].append(conv.state_to_tensor(etat[i])) #on sauvegarde l'état du jeu
+                    parties[i].append(conv.state_to_tensor(etat[i])) #on sauvegarde l'etat du jeu
 
                     
                     if(etat[i].is_end_of_game==True): 
@@ -64,7 +66,7 @@ def play_game(player,opponent,nb_partie,preprocessor,size=9,verbose=False):
                     if (i==1 & verbose==True):
                         tour+=1
                         print
-                        print("Coup numéro %i" %tour)
+                        print("Coup numero %i" %tour)
                         vis.vis_gs(etat[i])
                                                     
                     if (fin==1&s1==0&verbose==True):
@@ -79,13 +81,17 @@ def play_game(player,opponent,nb_partie,preprocessor,size=9,verbose=False):
         ancien=actuel
     
     ratio /=float(nb_partie)
-    print("%d parties executées en %f secondes"%(nb_partie,time.time()-start))
+    print("%d parties executees en %f secondes"%(nb_partie,time.time()-start))
     print("ratio de victoire: %f" % ratio)
     return (coups,parties,id_gagne)
     
     
 #play_game(player,opponent,20,conv,9,True)
-play_game(player,opponent,50,conv,9)
-
-
+(coups,parties,id_gagne)=play_game(player,opponent,5,conv,19,True)
+for i 
 # A FAIRE / APPRENDRE LE RESAEAU 
+
+def R_learning(coups,parties,id_gagnes,policy):
+    for i in len(parties):
+        if i in id_gagnes:
+            optimizer.lr = K.abs(optimizer.lr)
