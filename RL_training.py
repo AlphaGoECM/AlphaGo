@@ -5,22 +5,8 @@ import RL_player as pl
 import go
 import time
 import features as ft
-import visualisation as vis
+#import visualisation as vis
 
-
-#initialisation
-#player = pl.Player_rd()
-FEATURES = ["stone_color_feature", "ones", "turns_since_move", "liberties", "capture_size",
-                    "atari_size",  "sensibleness", "zeros"]
-opponent =pl.Player_rd()
-conv=ft.Preprocess(FEATURES)
-filename="model_gen5_02_.hdf5"
-#filename="model_gen_8_2_5h54.hdf5"
-#filename="model_gen_10_2_18h53.hdf5"
-#filename="model_gen_6_2_15h.hdf5"
-policy_pl=CNN_policy.CNN()
-policy_pl.load (filename) 
-player=pl.Player_pl(policy_pl,conv)
 
 def play_game(player,opponent,nb_partie,preprocessor,size=9,verbose=False):
     
@@ -86,12 +72,32 @@ def play_game(player,opponent,nb_partie,preprocessor,size=9,verbose=False):
     return (coups,parties,id_gagne)
     
     
-#play_game(player,opponent,20,conv,9,True)
-(coups,parties,id_gagne)=play_game(player,opponent,5,conv,19,True)
-for i 
-# A FAIRE / APPRENDRE LE RESAEAU 
+
 
 def R_learning(coups,parties,id_gagnes,policy):
-    for i in len(parties):
+    for i in range(len(parties)):
         if i in id_gagnes:
             optimizer.lr = K.abs(optimizer.lr)
+            
+            # a completer
+            
+            
+            
+#initialisation
+#player = pl.Player_rd()
+FEATURES = ["stone_color_feature", "ones", "turns_since_move", "liberties", "capture_size",
+                    "atari_size",  "sensibleness", "zeros"]
+opponent =pl.Player_rd()
+conv=ft.Preprocess(FEATURES)
+filename="model_gen5_02_.hdf5"
+#filename="model_gen_8_2_5h54.hdf5"
+#filename="model_gen_10_2_18h53.hdf5"
+#filename="model_gen_6_2_15h.hdf5"
+policy_pl=CNN_policy.CNN()
+policy_pl.load (filename) 
+player=pl.Player_pl(policy_pl,conv)            
+            
+#play_game(player,opponent,20,conv,9,True)
+(coups,parties,id_gagne)=play_game(player,opponent,4,conv,19,False)
+
+R_learning(coups,parties,id_gagne,policy_pl)
