@@ -26,6 +26,29 @@ class CNN :
     a different bias for each position, and applies a softmax function. The match version of AlphaGo
     used k = 192 filters; Figure 2,b and Extended Data Table 3 additionally show the results of training
     with k = 128; 256; 384 filters."""
+    
+    
+    def __init__(self, layers=None, name=None): 
+        self.layers = []  # Stack of layers.
+        self.model = None  # Internal Model instance.
+        self.inputs = []  # List of input tensors
+        self.outputs = []  # List of length 1: the output tensor (unique).
+        self._trainable = True
+        self._initial_weights = None
+
+        # Model attributes.
+        self._inbound_nodes = []
+        self._outbound_nodes = []
+        self.built = False
+
+    
+        self.name = name
+
+        # Add to the model any layers passed to the constructor.
+        if layers:
+            for layer in layers:
+                self.add(layer)
+
 
     @staticmethod
     def create_CNN(size, layers, features_nb) :
@@ -53,14 +76,16 @@ class CNN :
         CNN.add(Flatten())
         CNN.add(Biais())
         CNN.add(Activation('softmax'))
+        self.model=CNN
         return CNN
 
     def load(self,filename):
         CNN=load_model(filename, custom_objects={'Biais': Biais})
-        
+        self.model=CNN
+
 
     
-    def predict(self,tensor):
-        return self.predict(tensor)
+    def pred(self,tensor):
+        return self.model.predict(tensor)
 
    
