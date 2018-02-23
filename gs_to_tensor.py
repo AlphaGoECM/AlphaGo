@@ -188,8 +188,11 @@ def run_game_converter(cmd_line_args=None):
             "liberties",
             "capture_size",
             "atari_size",
+            "liberties_after",
             "sensibleness",
             "zeros"]
+
+
     else:
         feature_list = args.features.split(",")
 
