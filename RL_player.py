@@ -9,8 +9,9 @@ def conv_mat(position, size):   # convertit indice matrice [x][y] en indice list
 def conv_lis(position, size): # le contraire
     y=position%size
     x=(position-y)/size
-    return (x,y)
-
+    #print(x)
+    #print(y)
+    return (x.astype(int),y.astype(int))
 
 class Player_rd(object): #joue au hasard
 
@@ -40,8 +41,8 @@ class Player_pl(object): # joue coup le plus probable donnee par le policy
         if len(moves) == 0:  # pas de coup possible
             return []
         tensor = self.convertor.state_to_tensor(state) # convertit l etat du jeu en entre pour le CNN
-        tensor=np.swapaxes(tensor,1,3)
-        tensor=np.swapaxes(tensor,2,3)
+        #tensor=np.swapaxes(tensor,1,3)
+        #tensor=np.swapaxes(tensor,2,3)
 
         network_output = self.policy.pred(tensor)  # A FAIRE
         move_indices = [conv_mat(m, state.size) for m in moves] 
