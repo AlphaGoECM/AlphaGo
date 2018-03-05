@@ -6,6 +6,11 @@ import go
 import time
 import features as ft
 #import visualisation as vis
+from keras.optimizers import SGD
+import numpy as np
+from Tools import Tools
+
+
 
 
 def play_game(player,opponent,nb_partie,preprocessor,size=9,verbose=False):
@@ -25,7 +30,7 @@ def play_game(player,opponent,nb_partie,preprocessor,size=9,verbose=False):
     # on joue le premier coup de chaque partie
     for i in range(nb_partie):
         coup=opponent.get_move(etat[i]) 
-        coups[i].append(coup)
+        coups[i].append(Tools.one_hot_action(coup,19))
         etat[i].do_move(coup)
         parties[i].append(conv.state_to_tensor(etat[i]))
 
@@ -35,28 +40,26 @@ def play_game(player,opponent,nb_partie,preprocessor,size=9,verbose=False):
     fin=0 # pour arreter la boucle
     tour=1 #pour verbose
     while(fin<nb_partie): 
-                
-
         for i in range(nb_partie):
 
                 if(etat[i].is_end_of_game==False): # verifie que la partie n'est pas fini
-                    coup = actuel.get_move(etat[i]) # on recupere le coup jpue 
+                    coup = actuel.get_move(etat[i]) # on recupere le coup joue 
     
                     if etat[i].is_legal(coup)!=True:
                         #print("on entrre")
-                        etat[i].is_end_of_game=True # met fin à la partie -> qui a gagne?
+                        etat[i].is_end_of_game=True # met fin a la partie -> qui a gagne?
                         id_aband.append(i)
                         fin+=1
                         
                     else:   
-                        coups[i].append(coup) # on le sauvegarde
+                        coups[i].append(Tools.one_hot_action(coup,19)) # on le sauvegarde
                         etat[i].do_move(coup) #on le joue
                         parties[i].append(conv.state_to_tensor(etat[i])) #on sauvegarde l'etat du jeu
 
                     
                     if(etat[i].is_end_of_game==True ): 
                         fin+=1  # pour arreter la boucle
-                        if(etat[i].get_winner()==-1& i not in id_aband): # -1 pour blanc
+                        if(etat[i].get_winner()==-1): # -1 pour blanc
                             id_gagne.append(i)
                             ratio+=1
                     
@@ -69,34 +72,44 @@ def play_game(player,opponent,nb_partie,preprocessor,size=9,verbose=False):
                     if (fin==1&s1==0&verbose==True):
                         print("1ere partie finie en %f secondes" % (time.time()-start))
                         s1=1
-        #vis_gs(parties[1])
+        		#vis_gs(parties[1])
         
     
         #on change de joueur
         temp=actuel
         actuel=ancien
-        ancien=actuel
-    
-    ratio /=float(nb_partie)
-    print("%d parties executees en %f secondes"%(nb_partie,time.time()-start))
-    if(len(id_aband)!=0):
-        print("ratio de victoire: %f" % (ratio-len(id_aband)))
-        print("Nombre de partie abandonnée: %d" % len(id_aband))
+        ancien=actuel	
 
+    if(len(id_aband)!=nb_partie):
+        ratio /=float(nb_partie-len(id_aband))
     else:
-        print("ratio de victoire: %f" % ratio)
+	ratio/=float(nb_partie)
+
+
+    print("%d parties executees en %f secondes"%(nb_partie,time.time()-start))
+    print("ratio de victoire: %f" % ratio)
+   
+    if(len(id_aband)!=0):
+        print("Nombre de partie abandonnee: %d" % len(id_aband))
+
     return (coups,parties,id_gagne)
     
     
 
 
-def R_learning(coups,parties,id_gagnes,policy):
+
+def R_learning(coups,parties,id_gagnes,policy,player):
+
     for i in range(len(parties)):
+	
         if i in id_gagnes:
-            optimizer.lr = K.abs(optimizer.lr)
-            
-            # a completer
-            
+        	optimizer.lr = np.absolute(optimizer.lr)
+	else :
+		optimizer.lr = np.absolute(optimizer.lr)*-1
+        player.policy.model.train_on_batch(np.concatenate(parties[i], axis=0),np.concatenate(coups[i],axis=0))
+        #player.policy.model.train_on_batch(parties[i],coups[i])
+        #player.policy.model.train_on_batch(np.concatenate(parties[i], axis=0),coups[i])
+
             
             
 #initialisation
@@ -111,13 +124,22 @@ filename="model_26_2_19h53.hdf5"
 policy_pl=CNN_policy.CNN()
 policy_pl.load (filename) 
 
-#player = pl.Player_rd()
-opponent =pl.Player_rd()
-#opponent=pl.Player_pl(policy_pl,conv)
+player_rd = pl.Player_rd()
+opponent_rd =pl.Player_rd()
+opponent=pl.Player_pl(policy_pl,conv)
+learning_rate=0.001
+optimizer = SGD(lr=learning_rate)
 
+policy_pl.model.compile(loss='categorical_crossentropy',optimizer=optimizer)
 player=pl.Player_pl(policy_pl,conv) 
             
-#play_game(player,opponent,20,conv,9,True)
-(coups,parties,id_gagne)=play_game(player,opponent,500,conv,19,False)
+print("joueur random contre random")
+play_game(player_rd,opponent_rd,1,conv,19,False)
+print("joueur SL contre random")
+(coups,parties,id_gagne)=play_game(player,opponent_rd,3,conv,19,False)
+R_learning(coups,parties,id_gagne,policy_pl,player)
 
-#R_learning(coups,parties,id_gagne,policy_pl)
+print("joueur SL contre lui meme")
+(coups,parties,id_gagne)=play_game(player,opponent,10,conv,19,False)
+print("joueur SL contre random apres apprentissage")
+play_game(player,opponent_rd,5,conv,19,False)

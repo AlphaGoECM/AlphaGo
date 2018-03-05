@@ -27,7 +27,7 @@ class Tools :
         return categorical
 
     @staticmethod
-    def prepare_data(state_dataset, action_dataset,indices):
+    def prepare_data(state_dataset, action_dataset):
 
         batch_size =  len(state_dataset)
         state_batch_shape = (batch_size,) + state_dataset.shape[1:]

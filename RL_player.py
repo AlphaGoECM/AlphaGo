@@ -52,7 +52,6 @@ class Player_pl(object): # joue coup le plus probable donnee par le policy
         distribution = network_output[0][move_indices] #A VERIFIER
         return distribution
     
-       # return self._select_moves_and_normalize(network_output[0], moves, state.size)
     
     
     
