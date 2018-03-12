@@ -2,6 +2,7 @@ import CNN_policy
 import numpy as np
 import go
 
+
 def conv_mat(position, size):   # convertit indice matrice [x][y] en indice liste[x*size+y]
     (x, y) = position
     return x * size + y
@@ -44,12 +45,12 @@ class Player_pl(object): # joue coup le plus probable donnee par le policy
         #tensor=np.swapaxes(tensor,1,3)
         #tensor=np.swapaxes(tensor,2,3)
 
-        network_output = self.policy.pred(tensor)  # A FAIRE
+        network_output = self.policy.pred(tensor)  # 
         move_indices = [conv_mat(m, state.size) for m in moves] 
         
         # A faire : 
         # get network activations at legal move locations
-        distribution = network_output[0][move_indices] #A VERIFIER
+        distribution = network_output[0][move_indices] 
         return distribution
     
     

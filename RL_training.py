@@ -9,6 +9,7 @@ import features as ft
 from keras.optimizers import SGD
 import numpy as np
 from Tools import Tools
+import datetime
 
 
 
@@ -30,7 +31,7 @@ def play_game(player,opponent,nb_partie,preprocessor,size=9,verbose=False):
     # on joue le premier coup de chaque partie
     for i in range(nb_partie):
         coup=opponent.get_move(etat[i]) 
-        coups[i].append(Tools.one_hot_action(coup,19))
+        coups[i].append(Tools.one_hot_action(coup,19).flatten())
         etat[i].do_move(coup)
         parties[i].append(conv.state_to_tensor(etat[i]))
 
@@ -52,7 +53,7 @@ def play_game(player,opponent,nb_partie,preprocessor,size=9,verbose=False):
                         fin+=1
                         
                     else:   
-                        coups[i].append(Tools.one_hot_action(coup,19)) # on le sauvegarde
+                        coups[i].append(Tools.one_hot_action(coup,19).flatten()) # on le sauvegarde
                         etat[i].do_move(coup) #on le joue
                         parties[i].append(conv.state_to_tensor(etat[i])) #on sauvegarde l'etat du jeu
 
@@ -78,8 +79,10 @@ def play_game(player,opponent,nb_partie,preprocessor,size=9,verbose=False):
         #on change de joueur
         temp=actuel
         actuel=ancien
-        ancien=actuel	
-
+        ancien=actuel
+    
+     
+    
     if(len(id_aband)!=nb_partie):
         ratio /=float(nb_partie-len(id_aband))
     else:
@@ -99,16 +102,28 @@ def play_game(player,opponent,nb_partie,preprocessor,size=9,verbose=False):
 
 
 def R_learning(coups,parties,id_gagnes,policy,player):
-
+    print ('-'*15, 'Apprentissage', '-'*15)
+    nb_coup_total=0
     for i in range(len(parties)):
-	
+        #print ('-'*15, 'Parties %d' %i, '-'*15)
+        coups[i]=np.array(coups[i])
+        parties[i]=np.array(parties[i])
+        parties[i]=np.concatenate(parties[i], axis=0)
+        
+        nb_coup_total+=len(coups[i])
         if i in id_gagnes:
         	optimizer.lr = np.absolute(optimizer.lr)
-	else :
-		optimizer.lr = np.absolute(optimizer.lr)*-1
-        player.policy.model.train_on_batch(np.concatenate(parties[i], axis=0),np.concatenate(coups[i],axis=0))
-        #player.policy.model.train_on_batch(parties[i],coups[i])
+        else :
+            optimizer.lr = np.absolute(optimizer.lr)*-1
+        #player.policy.model.train_on_batch(np.concatenate(parties[i], axis=0),np.concatenate(coups[i],axis=0))
+        loss=player.policy.model.train_on_batch(parties[i],coups[i])
+        #print("loss =",loss)
         #player.policy.model.train_on_batch(np.concatenate(parties[i], axis=0),coups[i])
+    date = datetime.datetime.now()   
+    filepath = ("%s/model_%s_%s_%sh%s.hdf5" %("RL",date.day,date.month,date.hour, date.minute))
+    tfilepath = ("%s/model_%s_%s_%sh%s.txt" %("RL",date.day,date.month,date.hour, date.minute))
+    player.policy.model.save(filepath)
+    Tools.text_file(tfilepath,player.policy.model.model, nb_coup_total,len(parties), date)
 
             
             
@@ -136,10 +151,16 @@ player=pl.Player_pl(policy_pl,conv)
 print("joueur random contre random")
 play_game(player_rd,opponent_rd,1,conv,19,False)
 print("joueur SL contre random")
-(coups,parties,id_gagne)=play_game(player,opponent_rd,3,conv,19,False)
+(coups,parties,id_gagne)=play_game(player,opponent_rd,1000,conv,19,False)
+
+
+#coups=np.array(coups)
+#parties=np.array(parties)
+#print(coups.shape)
+#print(parties.shape)
 R_learning(coups,parties,id_gagne,policy_pl,player)
 
-print("joueur SL contre lui meme")
-(coups,parties,id_gagne)=play_game(player,opponent,10,conv,19,False)
+#print("joueur SL contre lui meme")
+#(coups,parties,id_gagne)=play_game(player,opponent,10,conv,19,False)
 print("joueur SL contre random apres apprentissage")
-play_game(player,opponent_rd,5,conv,19,False)
+play_game(player,opponent_rd,1000,conv,19,False)
