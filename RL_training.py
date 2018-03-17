@@ -31,9 +31,9 @@ def play_game(player,opponent,nb_partie,preprocessor,size=9,verbose=False):
     # on joue le premier coup de chaque partie
     for i in range(nb_partie):
         coup=opponent.get_move(etat[i]) 
-        #coups[i].append(Tools.one_hot_action(coup,19).flatten())
+        coups[i].append(Tools.one_hot_action(coup,19).flatten())
         etat[i].do_move(coup)
-        #parties[i].append(conv.state_to_tensor(etat[i]))
+        parties[i].append(conv.state_to_tensor(etat[i]))
 
     #on joue tout les coups
     actuel=player
@@ -54,10 +54,10 @@ def play_game(player,opponent,nb_partie,preprocessor,size=9,verbose=False):
                         
                     else:   
                         etat[i].do_move(coup) #on le joue
-			# a ajouter et tester que les parties de player ? 
-                        coups[i].append(Tools.one_hot_action(coup,19).flatten()) # on le sauvegarde
-
-                        parties[i].append(conv.state_to_tensor(etat[i])) #on sauvegarde l'etat du jeu
+			# a ajouter et tester que les parties de player ?
+			if actuel == player: 
+                        	coups[i].append(Tools.one_hot_action(coup,19).flatten()) # on le sauvegarde
+                        	parties[i].append(conv.state_to_tensor(etat[i])) #on sauvegarde l'etat du jeu
 
                     
                     if(etat[i].is_end_of_game==True ): 
@@ -81,12 +81,14 @@ def play_game(player,opponent,nb_partie,preprocessor,size=9,verbose=False):
         #on change de joueur
         temp=actuel
         actuel=ancien
-        ancien=actuel
+        ancien=temp
     
      
     
     if(len(id_aband)!=nb_partie):
-        ratio /=float(nb_partie-len(id_aband))
+#        ratio /=float(nb_partie-len(id_aband))
+	ratio/=float(nb_partie)
+
     else:
 	ratio/=float(nb_partie)
 
@@ -136,7 +138,9 @@ def play_learn(player,opponent,nb_partie,preprocessor,epoch,policy,size=19,verbo
 	
 	print("apprentissage debute a _%s_%s_%sh%s" %(date.day,date.month,date.hour, date.minute))          
 
-	i=0
+	i=1
+	print ('-'*15, 'Epoch %d' %i, '-'*15)
+
 	(coups,parties,id_gagne)=play_game(player,opponent,nb_partie,preprocessor,19,False)
 	new_model=R_learning(coups,parties,id_gagne,policy,player)
 	policy_pl=CNN_policy.CNN()
@@ -145,7 +149,8 @@ def play_learn(player,opponent,nb_partie,preprocessor,epoch,policy,size=19,verbo
 	del player
 	player=pl.Player_pl(policy_pl,preprocessor) 
 	
-	while i<epoch:
+	while i<epoch+1	:
+		i+=1
 		print ('-'*15, 'Epoch %d' %i, '-'*15)
 		(coups,parties,id_gagne)=play_game(player,opponent,nb_partie,preprocessor,19,False)
 		new_model=R_learning(coups,parties,id_gagne,policy_pl,player)	
@@ -155,7 +160,6 @@ def play_learn(player,opponent,nb_partie,preprocessor,epoch,policy,size=19,verbo
 		policy_pl.model.compile(loss='categorical_crossentropy',optimizer=optimizer)
 		del player
 		player=pl.Player_pl(policy_pl,preprocessor)   
-		i+=1
 	date = datetime.datetime.now()   
 
 	print("apprentissage termine a _%s_%s_%sh%s" %(date.day,date.month,date.hour, date.minute))          
@@ -165,12 +169,7 @@ FEATURES = ["stone_color_feature", "ones", "turns_since_move", "liberties", "cap
                     "atari_size",  "sensibleness", "zeros"]
 conv=ft.Preprocess(FEATURES)
 filename="model_26_2_19h53.hdf5"
-#filename="model_gen5_02_.hdf5"
-#filename="model_gen_8_2_5h54.hdf5"
-#filename="model_gen_10_2_18h53.hdf5"
-#filename="model_gen_6_2_15h.hdf5"
-#policy_pl=CNN_policy.CNN()
-#policy_pl.load (filename) 
+
 
 player_rd = pl.Player_rd()
 opponent_rd =pl.Player_rd()
@@ -182,29 +181,17 @@ optimizer = SGD(lr=learning_rate)
 print("joueur random contre random")
 play_game(player_rd,opponent_rd,1,conv,19,False)
 
-#filename="RL/model_12_3_13h34.hdf5"
 policy_pl=CNN_policy.CNN()
 policy_pl.load (filename) 
 policy_pl.model.compile(loss='categorical_crossentropy',optimizer=optimizer)
 player=pl.Player_pl(policy_pl,conv) 
-#opponent=pl.Player_pl(policy_pl,conv)
 
-nb_partie=1000
+nb_partie=100
 preprocessor=ft.Preprocess(FEATURES)
 epoch=10
 policy=policy_pl
 play_learn(player,opponent_rd ,nb_partie,preprocessor,epoch,policy,size=19,verbose=False)
-#print("joueur apres 1 apprentissage contre random")
-#(coups,parties,id_gagne)=play_game(player,opponent_rd,1000,conv,19,False)
 
 
-#coups=np.array(coups)
-#parties=np.array(parties)
-#print(coups.shape)
-#print(parties.shape)
-#R_learning(coups,parties,id_gagne,policy_pl,player)
 
-#print("joueur SL contre lui meme")
-#(coups,parties,id_gagne)=play_game(player,opponent,10,conv,19,False)
-#print("joueur SL contre random apres apprentissage")
-#play_game(player,opponent_rd,1000,conv,19,False)
+
