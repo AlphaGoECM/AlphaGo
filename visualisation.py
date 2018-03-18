@@ -41,7 +41,7 @@ def vis_layer(layer,num_layer):
         print (string)
         x+=1
         
-# visualisation d'un layer et du gs associé
+# visualisation d un layer et du gs associe
 def vis_gs_layer(gs,layer,num_layer):
     x=0
     taille=len(gs.board)

@@ -20,6 +20,9 @@ class Player_rd(object): #joue au hasard
         return
     
     def get_move(self, state):
+        if len(state.history) > 100 and state.history[-3] == go.PASS_MOVE:
+        	return go.PASS_MOVE
+
         # list with sensible moves
         sensible_moves = [move for move in state.get_legal_moves(include_eyes=False)]        
 
@@ -55,18 +58,29 @@ class Player_pl(object): # joue coup le plus probable donnee par le policy
     
     
     
-    
     def get_move(self, state):
         # list with sensible moves
         sensible_moves = [move for move in state.get_legal_moves(include_eyes=False)]
              
         
-        #parcourt les coups possible et ressort celui joue le policy network    
+        #parcourt les coups possible et ressort celui joue le policy network
         if len(sensible_moves) > 0:
-
+	    
             move_probs = self.eval_state(state, sensible_moves)
-            max_prob = np.argmax(move_probs)
-            (x,y)=conv_lis(max_prob,state.size)
-            return (x,y)
-       
+	    coup=(-1,-1)
+	    while state.is_legal(coup)!=True:
+            	max_prob = np.argmax(move_probs)
+            	coup=conv_lis(max_prob,state.size)
+		#(x,y)=coup
+	    	#print("max porb = %d  x= %d y=%d" %(max_prob,x,y))
+		move_probs= np.delete(move_probs, max_prob)
+		if len(move_probs)==0:
+        		sensible_moves = [move for move in state.get_legal_moves(include_eyes=False)]        
+
+        		if len(sensible_moves) > 0:
+            			a=np.random.randint(0,len(sensible_moves),1) #on prend un coup au hasard
+            			return(sensible_moves[a[0]])
+			return go.PASS_MOVE
+
+            return coup       
         return go.PASS_MOVE

@@ -5,7 +5,7 @@ import RL_player as pl
 import go
 import time
 import features as ft
-#import visualisation as vis
+import visualisation as vis
 from keras.optimizers import SGD
 import numpy as np
 from Tools import Tools
@@ -49,6 +49,7 @@ def play_game(player,opponent,nb_partie,preprocessor,size=9,verbose=False):
                     if etat[i].is_legal(coup)!=True:
                         #print("on entrre")
                         etat[i].is_end_of_game=True # met fin a la partie -> qui a gagne?
+			print("prob au coup %d" %len(coups[i]))
                         id_aband.append(i)
                         fin+=1
                         
@@ -63,6 +64,7 @@ def play_game(player,opponent,nb_partie,preprocessor,size=9,verbose=False):
                     if(etat[i].is_end_of_game==True ): 
                         fin+=1  # pour arreter la boucle
                         if(etat[i].get_winner()==-1): # -1 pour blanc
+
                             id_gagne.append(i)
                             ratio+=1
                     
@@ -75,7 +77,7 @@ def play_game(player,opponent,nb_partie,preprocessor,size=9,verbose=False):
                     if (fin==1&s1==0&verbose==True):
                         print("1ere partie finie en %f secondes" % (time.time()-start))
                         s1=1
-        		#vis_gs(parties[1])
+        		vis_gs(parties[1])
         
     
         #on change de joueur
@@ -86,7 +88,7 @@ def play_game(player,opponent,nb_partie,preprocessor,size=9,verbose=False):
      
     
     if(len(id_aband)!=nb_partie):
-#        ratio /=float(nb_partie-len(id_aband))
+#       ratio /=float(nb_partie-len(id_aband))
 	ratio/=float(nb_partie)
 
     else:
@@ -141,7 +143,7 @@ def play_learn(player,opponent,nb_partie,preprocessor,epoch,policy,size=19,verbo
 	i=1
 	print ('-'*15, 'Epoch %d' %i, '-'*15)
 
-	(coups,parties,id_gagne)=play_game(player,opponent,nb_partie,preprocessor,19,False)
+	(coups,parties,id_gagne)=play_game(player,opponent,nb_partie,preprocessor,19,verbose)
 	new_model=R_learning(coups,parties,id_gagne,policy,player)
 	policy_pl=CNN_policy.CNN()
 	policy_pl.load (new_model)
@@ -186,11 +188,16 @@ policy_pl.load (filename)
 policy_pl.model.compile(loss='categorical_crossentropy',optimizer=optimizer)
 player=pl.Player_pl(policy_pl,conv) 
 
-nb_partie=100
+policy_op=CNN_policy.CNN()
+policy_op.load (filename) 
+policy_op.model.compile(loss='categorical_crossentropy',optimizer=optimizer)
+oponent_pl=pl.Player_pl(policy_op,conv) 
+
+nb_partie=10
 preprocessor=ft.Preprocess(FEATURES)
 epoch=10
 policy=policy_pl
-play_learn(player,opponent_rd ,nb_partie,preprocessor,epoch,policy,size=19,verbose=False)
+play_learn(player,oponent_pl,nb_partie,preprocessor,epoch,policy,size=19,verbose=True)
 
 
 
