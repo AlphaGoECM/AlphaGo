@@ -1,6 +1,8 @@
 import CNN_policy
 import numpy as np
 import go
+import features as ft
+
 
 
 def conv_mat(position, size):   # convertit indice matrice [x][y] en indice liste[x*size+y]
@@ -16,7 +18,9 @@ def conv_lis(position, size): # le contraire
 
 class Player_rd(object): #joue au hasard
 
-    def __init__(self):
+    def __init__(self,convertor):
+        # juste pour pouvoir executer play_game
+        self.convertor=convertor
         return
     
     def get_move(self, state):
@@ -48,7 +52,7 @@ class Player_pl(object): # joue coup le plus probable donnee par le policy
         #tensor=np.swapaxes(tensor,1,3)
         #tensor=np.swapaxes(tensor,2,3)
 
-        network_output = self.policy.pred(tensor)  # 
+        network_output = self.policy.pred(tensor)  
         move_indices = [conv_mat(m, state.size) for m in moves] 
         
         # A faire : 
@@ -65,15 +69,15 @@ class Player_pl(object): # joue coup le plus probable donnee par le policy
         
         #parcourt les coups possible et ressort celui joue le policy network
         if len(sensible_moves) > 0:
-	    
             move_probs = self.eval_state(state, sensible_moves)
-	    coup=(-1,-1)
-	    while state.is_legal(coup)!=True:
-            	max_prob = np.argmax(move_probs)
-            	coup=conv_lis(max_prob,state.size)
-		#(x,y)=coup
-	    	#print("max porb = %d  x= %d y=%d" %(max_prob,x,y))
-		move_probs= np.delete(move_probs, max_prob)
+            
+	    coup=(-1,-1) # init
+	    while state.is_legal(coup)!=True: # si le coup donnee par le SL est illegal on prend le prochain
+            	max_prob = np.argmax(move_probs) # prend le coup le plus probable
+            	coup=conv_lis(max_prob,state.size)               
+                move_probs= np.delete(move_probs, max_prob)
+        
+        
 		if len(move_probs)==0:
         		sensible_moves = [move for move in state.get_legal_moves(include_eyes=False)]        
 
