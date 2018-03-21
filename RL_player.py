@@ -88,3 +88,28 @@ class Player_pl(object): # joue coup le plus probable donnee par le policy
 
             return coup       
         return go.PASS_MOVE
+
+    
+import visualisation as vis
+import sys    
+    
+class Player_human(object): #joueur humain
+
+    def __init__(self,convertor):
+        # juste pour pouvoir executer play_game
+        self.convertor=convertor
+        return
+    
+    def get_move(self, state):
+        
+        # list with sensible moves
+        coup=(-1,-1)
+        while state.is_legal(coup)!=True:
+            coup = eval(raw_input("Entrez les coordonnees:"))
+            if coup ==0:
+                return go.PASS_MOVE 
+            if state.is_legal(coup)!=True:
+                print "coup illegal"
+        return coup
+        
+
