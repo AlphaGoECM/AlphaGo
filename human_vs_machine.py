@@ -90,7 +90,7 @@ humain=pl.Player_human(conv)
 # joueur adverse
 
 # SL cree par Mathias
-f_m="model_26_2_19h53.hdf5"  # a modifier pour jouer contre un autre modele ( sans toutes les featuures )
+f_m="model_26_2_19h53.hdf5"  # a modifier pour jouer contre un autre modele ( sans toutes la feature liberties_after )
 policy_m=CNN_policy.CNN()
 
 # SL cree par Evan
