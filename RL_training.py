@@ -21,7 +21,6 @@ def play_game(player,opponent,nb_partie,size=9,verbose=False):
     coups=[[] for _ in range(nb_partie)]  #liste des coups joues
     parties=[[] for _ in range(nb_partie)] # liste des etats du jeu
     id_gagne=[] #liste des indices des parties gagnees
-    id_aband=[]#liste des parties non finies
     ratio=0
     conv=player.convertor
     # deroulement
@@ -36,7 +35,7 @@ def play_game(player,opponent,nb_partie,size=9,verbose=False):
 
         if(i%2==1): #i impair opponent commence
             coup=opponent.get_move(etat[i])                 
-        #etat[i].do_move(coup)
+        etat[i].do_move(coup)
         #coups[i].append(Tools.one_hot_action(coup,19).flatten())
         #parties[i].append(conv.state_to_tensor(etat[i]))
 
@@ -167,14 +166,14 @@ optimizer = SGD(lr=learning_rate)
 print("creation des joueur")
 
 # SL cree par Mathias
-f_m="model_26_2_19h53.hdf5"
+f_m="model/model_26_2_19h53.hdf5"
 policy_m=CNN_policy.CNN()
 policy_m.load(f_m)
 policy_m.model.compile(loss='categorical_crossentropy',optimizer=optimizer)
 player_m=pl.Player_pl(policy_m,conv)
 
 # SL cree par Evan
-f_e="model_temp.25.hdf5"
+f_e="model/model_temp.25.hdf5"
 policy_e=CNN_policy.CNN()
 policy_e.load(f_e)
 policy_e.model.compile(loss='categorical_crossentropy',optimizer=optimizer)
@@ -242,7 +241,7 @@ print
 print("entrainement contre joueur random") 
 name="E_random"
 
-play_learn(player_e,opponent_rd,nb_partie,epoch,policy_e,name,size,verbose)
+#play_learn(player_e,opponent_rd,nb_partie,epoch,policy_e,name,size,verbose)
 
 # entrainement contre lui meme
 print("entrainement contre lui-meme")
@@ -257,4 +256,3 @@ name="e_M"
 play_learn(player_e,opponent_m,nb_partie,epoch,policy,name,size,verbose)
 
 print
-
