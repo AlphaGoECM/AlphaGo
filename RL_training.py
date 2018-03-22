@@ -14,7 +14,7 @@ import datetime
 
 
 
-def play_game(player,opponent,nb_partie,size=9,verbose=False):
+def play_game(player,opponent,nb_partie,size=19,verbose=False):
     
     #init
     etat = [go.GameState(size) for _ in range(nb_partie)] #liste des parties actuelle
