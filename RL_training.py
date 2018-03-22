@@ -14,7 +14,7 @@ import datetime
 
 
 
-def play_game(player,opponent,nb_partie,size=19,verbose=False):
+def play_game(player,opponent,nb_partie,size=9,verbose=False):
     
     #init
     etat = [go.GameState(size) for _ in range(nb_partie)] #liste des parties actuelle
@@ -28,16 +28,8 @@ def play_game(player,opponent,nb_partie,size=19,verbose=False):
     
     # on joue le premier coup de chaque partie
     for i in range(nb_partie):
-        if(i%2==0): #i pair player commence 
-            coup=player.get_move(etat[i]) 
-            etat[i].do_move(coup)
-            coup=opponent.get_move(etat[i]) # l'opponent joue direct -> au debut de la boucle ce sera bien a player de jouer
-
-        if(i%2==1): #i impair opponent commence
-            coup=opponent.get_move(etat[i])                 
+        coup=opponent.get_move(etat[i]) # celui qui commence est l'opposant il a les pierres noirs
         etat[i].do_move(coup)
-        #coups[i].append(Tools.one_hot_action(coup,19).flatten())
-        #parties[i].append(conv.state_to_tensor(etat[i]))
 
     #on joue tout les coups
     actuel=player
@@ -246,7 +238,6 @@ name="E_random"
 # entrainement contre lui meme
 print("entrainement contre lui-meme")
 name="E_E"
-
 play_learn(player_e,opponent_e,nb_partie,epoch,policy,name,size,verbose)
 
 #entrainement contre le SL de Mathias

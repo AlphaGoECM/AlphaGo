@@ -2,7 +2,6 @@ import CNN_policy
 import numpy as np
 import go
 import features as ft
-import sys    
 
 
 
@@ -67,30 +66,35 @@ class Player_pl(object): # joue coup le plus probable donnee par le policy
         # list with sensible moves
         sensible_moves = [move for move in state.get_legal_moves(include_eyes=False)]
              
-        
+        if len(state.history) > 100 and state.history[-3] == go.PASS_MOVE: # accelere les parties
+        	return go.PASS_MOVE
+
         #parcourt les coups possible et ressort celui joue le policy network
         if len(sensible_moves) > 0:
             move_probs = self.eval_state(state, sensible_moves)
-            
-	    coup=(-1,-1) # init
-	    while state.is_legal(coup)!=True: # si le coup donnee par le SL est illegal on prend le prochain
-            	max_prob = np.argmax(move_probs) # prend le coup le plus probable
-            	coup=conv_lis(max_prob,state.size)               
-                move_probs= np.delete(move_probs, max_prob)
+        else:
+            return go.PASS_MOVE
+
+        
+        coup=(-1,-1) # init
+        while state.is_legal(coup)!=True: # si le coup donnee par le SL est illegal on prend le prochain
+            max_prob = np.argmax(move_probs) # prend le coup le plus probable
+            coup=conv_lis(max_prob,state.size)               
+            move_probs= np.delete(move_probs, max_prob)
         
         
-		if len(move_probs)==0:
-        		sensible_moves = [move for move in state.get_legal_moves(include_eyes=False)]        
+            if len(move_probs)==0:
+                sensible_moves = [move for move in state.get_legal_moves(include_eyes=False)]        
+                if len(sensible_moves) > 0:
+                    a=np.random.randint(0,len(sensible_moves),1) #on prend un coup au hasard
+                    return(sensible_moves[a[0]])
+                return go.PASS_MOVE
 
-        		if len(sensible_moves) > 0:
-            			a=np.random.randint(0,len(sensible_moves),1) #on prend un coup au hasard
-            			return(sensible_moves[a[0]])
-			return go.PASS_MOVE
-
-            return coup       
-        return go.PASS_MOVE
+        return coup       
 
     
+import visualisation as vis
+import sys    
     
 class Player_human(object): #joueur humain
 
