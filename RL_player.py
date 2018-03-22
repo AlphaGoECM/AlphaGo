@@ -2,6 +2,7 @@ import CNN_policy
 import numpy as np
 import go
 import features as ft
+import sys    
 
 
 
@@ -90,8 +91,6 @@ class Player_pl(object): # joue coup le plus probable donnee par le policy
         return go.PASS_MOVE
 
     
-import visualisation as vis
-import sys    
     
 class Player_human(object): #joueur humain
 
