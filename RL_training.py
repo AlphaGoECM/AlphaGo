@@ -158,14 +158,14 @@ optimizer = SGD(lr=learning_rate)
 print("creation des joueur")
 
 # SL cree par Mathias
-f_m="model/model_26_2_19h53.hdf5"
+f_m="model/SL/model_26_2_19h53.hdf5"
 policy_m=CNN_policy.CNN()
 policy_m.load(f_m)
 policy_m.model.compile(loss='categorical_crossentropy',optimizer=optimizer)
 player_m=pl.Player_pl(policy_m,conv)
 
 # SL cree par Evan
-f_e="model/model_temp.25.hdf5"
+f_e="model/SL/model_temp.25.hdf5"
 policy_e=CNN_policy.CNN()
 policy_e.load(f_e)
 policy_e.model.compile(loss='categorical_crossentropy',optimizer=optimizer)
@@ -196,7 +196,7 @@ print
 
 #parametre d'apprentissage
 
-nb_partie=1000
+nb_partie=100
 epoch=10
 verbose=False
 size=19
@@ -238,11 +238,11 @@ name="E_random"
 # entrainement contre lui meme
 print("entrainement contre lui-meme")
 name="E_E"
-play_learn(player_e,opponent_e,nb_partie,epoch,policy,name,size,verbose)
+#play_learn(player_e,opponent_e,nb_partie,epoch,policy,name,size,verbose)
 
 #entrainement contre le SL de Mathias
 print("entrainement contre le SL de Mathias")
-name="e_M"
+name="E_M"
 
 play_learn(player_e,opponent_m,nb_partie,epoch,policy,name,size,verbose)
 
